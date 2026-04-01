@@ -1,91 +1,38 @@
 # Swagger API Security (SAST + DAST)
 
-This project includes a production-friendly security setup with:
+This project uses:
 
-- SAST (static source analysis) via GitHub CodeQL
-- DAST (runtime/API security testing) via OWASP ZAP
+- SAST with CodeQL (`.github/workflows/sast-security.yml`)
+- DAST with OWASP ZAP API Scan (`.github/workflows/zap-security.yml`)
 
-## What is included
-
-- `GET /openapi.json` dynamic OpenAPI endpoint in `server.js`
-- `openapi:export` script to create `openapi/openapi.json` (static spec)
-- ZAP baseline scan script for running app target
-- ZAP API scan scripts for:
-  - Dynamic OpenAPI URL target
-  - Static OpenAPI file target
-- Scan policy templates:
-  - `zap/rules-baseline.conf`
-  - `zap/rules-api.conf`
-
-## Run application
+## Local app
 
 ```bash
 npm start
 ```
 
-Swagger UI:
+- Swagger UI: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+- OpenAPI JSON: [http://localhost:3000/openapi.json](http://localhost:3000/openapi.json)
 
-- [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+## DAST workflow behavior
 
-OpenAPI JSON:
+`zap-security.yml` has two jobs:
 
-- [http://localhost:3000/openapi.json](http://localhost:3000/openapi.json)
+- `api-static`: exports `openapi/openapi.json` and scans it with `zaproxy/action-api-scan`
+- `api-dynamic`: scans a live OpenAPI URL directly
 
-## Run ZAP scans
+## Required repository variables
 
-### 1) Baseline dynamic scan (passive checks)
+Set these in GitHub repository variables:
 
-Use this in PR pipelines for fast feedback:
+- `ZAP_API_SERVER_URL`  
+  Base API URL inserted into exported OpenAPI `servers` for static scan.  
+  Example: `https://staging.example.com`
+- `ZAP_API_TARGET`  
+  OpenAPI URL for dynamic scan.  
+  Example: `https://staging.example.com/openapi.json`
 
-```bash
-npm run zap:baseline
-```
+## Why localhost errors happened
 
-### 2) API scan using dynamic OpenAPI endpoint
-
-Use when app is running and OpenAPI endpoint is reachable:
-
-```bash
-npm run zap:api:dynamic
-```
-
-### 3) API scan using static OpenAPI file
-
-Use in CI when runtime endpoint is unavailable:
-
-```bash
-npm run zap:api:static
-```
-
-## Reports generated
-
-Each scan writes reports in project root:
-
-- HTML report (`*.html`)
-- XML report (`*.xml`)
-- JSON report (`*.json`)
-
-## Production best practices
-
-- Run baseline scan on every PR.
-- Run API scan on merge to main and nightly schedule.
-- Keep `zap/rules-*.conf` strict; only suppress verified false positives.
-- Track report artifacts in CI for audit and triage.
-- Add authenticated scan context for protected endpoints.
-- Segment scan environments (staging/prod-like) and never run aggressive scans on live production traffic without change control.
-
-## CI pipeline included
-
-GitHub Actions workflows:
-
-- `.github/workflows/sast-security.yml`
-  - PR + main + nightly: CodeQL SAST scan for JavaScript
-- `.github/workflows/zap-security.yml`
-  - PR: `zap-api-static` job using `zaproxy/action-api-scan` against `openapi/openapi.json`
-  - Main branch + nightly: `zap-dynamic` job (baseline scan + optional dynamic API scan via `vars.ZAP_API_TARGET`)
-
-### Dynamic target variable
-
-For dynamic API scanning in GitHub Actions, set repository variable:
-
-- `ZAP_API_TARGET` (example: `https://staging.example.com/openapi.json`)
+If the OpenAPI `servers` value is `http://localhost:3000`, ZAP runs inside a container and cannot reach your runner's localhost app by default.  
+Using `ZAP_API_SERVER_URL` fixes this by pointing scans to a reachable staging URL.

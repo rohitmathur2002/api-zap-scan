@@ -1,4 +1,6 @@
 const swaggerJSDoc = require("swagger-jsdoc");
+const port = process.env.PORT || 3000;
+const serverUrl = process.env.OPENAPI_SERVER_URL || `http://localhost:${port}`;
 
 const options = {
   definition: {
@@ -10,7 +12,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000"
+        url: serverUrl
       }
     ]
   },
