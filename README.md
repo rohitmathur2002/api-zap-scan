@@ -16,23 +16,11 @@ npm start
 
 ## DAST workflow behavior
 
-`zap-security.yml` has two jobs:
+`zap-security.yml` runs one local CI job:
 
-- `api-static`: exports `openapi/openapi.json` and scans it with `zaproxy/action-api-scan`
-- `api-dynamic`: scans a live OpenAPI URL directly
+- Starts your app in the runner
+- Waits for `http://127.0.0.1:3000/openapi.json`
+- Runs ZAP API scan in Docker against that local endpoint
+- Uploads HTML/XML/JSON reports as workflow artifacts
 
-## Required repository variables
-
-Set these in GitHub repository variables:
-
-- `ZAP_API_SERVER_URL`  
-  Base API URL inserted into exported OpenAPI `servers` for static scan.  
-  Example: `https://staging.example.com`
-- `ZAP_API_TARGET`  
-  OpenAPI URL for dynamic scan.  
-  Example: `https://staging.example.com/openapi.json`
-
-## Why localhost errors happened
-
-If the OpenAPI `servers` value is `http://localhost:3000`, ZAP runs inside a container and cannot reach your runner's localhost app by default.  
-Using `ZAP_API_SERVER_URL` fixes this by pointing scans to a reachable staging URL.
+No live domain or repository variables are required for this setup.
