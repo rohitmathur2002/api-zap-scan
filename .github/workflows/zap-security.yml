@@ -45,7 +45,7 @@ jobs:
 
       - name: Run ZAP API scan
         run: |
-          docker run --rm -t --network host \
+          docker run --rm -t --network host --user root \
             -v "${PWD}:/zap/wrk" \
             ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py \
             -f openapi \
